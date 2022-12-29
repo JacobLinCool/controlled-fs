@@ -1,8 +1,15 @@
 {
 	"name": "controlled-fs",
 	"version": "1.0.0",
-	"description": "",
-	"keywords": [],
+	"description": "Make the filesystem under your control!",
+	"keywords": [
+		"fs",
+		"filesystem",
+		"file",
+		"directory",
+		"serialize",
+		"deserialize"
+	],
 	"author": "JacobLinCool <jacoblincool@gmail.com> (https://github.com/JacobLinCool)",
 	"license": "MIT",
 	"main": "lib/index.js",
@@ -40,5 +47,13 @@
 		"*.{ts,js,json,yaml,yml}": [
 			"prettier --write"
 		]
-	}
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JacobLinCool/controlled-fs.git"
+	},
+	"bugs": {
+		"url": "https://github.com/JacobLinCool/controlled-fs/issues"
+	},
+	"homepage": "https://jacoblincool.github.io/controlled-fs"
 }
