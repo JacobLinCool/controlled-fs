@@ -49,12 +49,12 @@ const post3 = create_post("user2", "Post 3", "This is post 3", [image1, image2])
 const users = list_users().map((user) => fs.users[user]);
 for (const user of users) {
 	const info = user["info.json"].$data;
-	console.group(info.name);
+	console.group(info?.name);
 	console.log(info);
 	for (const postid of user.posts.$list()) {
 		const post = user.posts[postid].$data;
-		console.group(post.title);
-		console.log({ ...post, images: post.images.map((image) => fs.images[image].$data) });
+		console.group(post?.title);
+		console.log({ ...post, images: post?.images.map((image) => fs.images[image].$data) });
 		console.groupEnd();
 	}
 	console.groupEnd();
