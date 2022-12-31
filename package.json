@@ -1,14 +1,14 @@
 {
 	"name": "controlled-fs",
-	"version": "1.0.0",
-	"description": "Make the filesystem under your control!",
+	"version": "2.0.0",
+	"description": "A type-safe filesystem abstraction for Node.js, with runtime validation and customizable serialization.",
 	"keywords": [
 		"fs",
 		"filesystem",
 		"file",
 		"directory",
-		"serialize",
-		"deserialize"
+		"serialization",
+		"validation"
 	],
 	"author": "JacobLinCool <jacoblincool@gmail.com> (https://github.com/JacobLinCool)",
 	"license": "MIT",
@@ -26,7 +26,8 @@
 		"test": "jest --coverage"
 	},
 	"dependencies": {
-		"debug": "^4.3.4"
+		"debug": "^4.3.4",
+		"zod": "^3.20.2"
 	},
 	"devDependencies": {
 		"@types/debug": "^4.1.7",

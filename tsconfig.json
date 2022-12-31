@@ -11,6 +11,9 @@
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"paths": {
+			"controlled-fs": ["./src/index.ts"]
+		}
 	}
 }

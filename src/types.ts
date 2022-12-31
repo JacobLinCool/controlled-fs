@@ -1,80 +1,45 @@
-export type ShadowControlledDirectory<T = unknown> = {
-	// @ts-expect-error
-	get $type(): "dir";
-	// @ts-expect-error
-	get $exists(): false;
-	// @ts-expect-error
-	get $writeable(): false;
-	// @ts-expect-error
-	get $path(): string;
-	// @ts-expect-error
-	get $remove(): undefined;
-	// @ts-expect-error
-	get $list(): undefined;
-	[key: string]: ControlledNode<T>;
+import type { z } from "zod";
+
+export type FileSchema<T = any> = z.ZodType<T> & {
+	$serializer: (data: T) => Buffer;
+	$deserializer: (data: Buffer) => T;
 };
 
-export type ControlledDirectory<T = unknown> = {
-	// @ts-expect-error
-	get $type(): "dir";
-	// @ts-expect-error
-	get $exists(): true;
-	// @ts-expect-error
-	get $writeable(): false;
-	// @ts-expect-error
+export type DirSchema = z.ZodType<{
+	[K in keyof unknown]: FileSystemSchema;
+}>;
+
+export type FileSystemSchema = DirSchema | FileSchema;
+
+export type IsFile<T extends FileSystemSchema> = T extends FileSchema ? true : false;
+export type IsDir<T extends FileSystemSchema> = IsFile<T> extends true ? false : true;
+export type SubSchema<T extends DirSchema, K extends keyof z.infer<T>> = T extends z.ZodRecord
+	? T["valueSchema"]
+	: T extends z.ZodObject<infer S>
+	? S[K]
+	: never;
+
+export type FileNode<T> = {
+	get $exists(): boolean;
 	get $path(): string;
-	/**
-	 * Remove the directory if it exists
-	 */
-	// @ts-expect-error
 	get $remove(): () => void;
-	// @ts-expect-error
+	get $data(): T;
+	set $data(data: T | undefined);
+};
+
+export type DirNode<T extends FileSystemSchema> = {
+	get $exists(): boolean;
+	get $path(): string;
 	get $list(): () => string[];
-	[key: string]: ControlledNode<T>;
-};
-
-export type ShadowControlledFile<T = unknown> = {
-	// @ts-expect-error
-	get $type(): "file";
-	// @ts-expect-error
-	get $exists(): false;
-	// @ts-expect-error
-	get $writeable(): true;
-	// @ts-expect-error
-	get $path(): string;
-	// @ts-expect-error
-	get $remove(): undefined;
-	// @ts-expect-error
-	get $data(): T;
-	set $data(value: T);
-	[key: string]: ControlledNode<T>;
-};
-
-export type ControlledFile<T = unknown> = {
-	// @ts-expect-error
-	get $type(): "file";
-	// @ts-expect-error
-	get $exists(): true;
-	// @ts-expect-error
-	get $writeable(): true;
-	// @ts-expect-error
-	get $path(): string;
-	/**
-	 * Remove the file if it exists
-	 */
-	// @ts-expect-error
 	get $remove(): () => void;
-	// @ts-expect-error
-	get $data(): T;
-	set $data(value: T);
-	[key: string]: ControlledNode<T>;
+} & {
+	[K in keyof z.infer<T>]: IsDir<SubSchema<T, K>> extends true
+		? Node<SubSchema<T, K>>
+		: FileNode<z.infer<SubSchema<T, K>>>;
 };
 
-export type ControlledNode<T = unknown> =
-	| ShadowControlledFile<T>
-	| ControlledFile<T>
-	| ShadowControlledDirectory<T>
-	| ControlledDirectory<T>;
+export type Node<T extends FileSystemSchema = any> = T extends FileSchema
+	? FileNode<z.infer<T>>
+	: DirNode<T>;
 
-export type Serializer<T = unknown> = (input: T) => Buffer | string;
-export type Deserializer<T = unknown> = (input: Buffer) => T;
+export type UntypedFileSystemSchema = z.ZodRecord<z.ZodString, FileSchema<Buffer>>;
