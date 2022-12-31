@@ -1,3 +1,4 @@
+import type { Stats } from "node:fs";
 import type { z } from "zod";
 
 export type FileSchema<T = any> = z.ZodType<T> & {
@@ -43,3 +44,18 @@ export type Node<T extends FileSystemSchema = any> = T extends FileSchema
 	: DirNode<T>;
 
 export type UntypedFileSystemSchema = z.ZodRecord<z.ZodString, FileSchema<Buffer>>;
+
+export type CacheItem = {
+	exists?: boolean;
+	stat?: Stats;
+	data?: Buffer;
+};
+
+export interface MountOptions {
+	/**
+	 * Enable caching. This will reduce the number of disk reads and writes, but will also
+	 * increase memory usage. Pass a Map to use a custom cache.
+	 * @default false
+	 */
+	cache?: boolean | Map<string, CacheItem>;
+}
