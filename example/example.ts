@@ -1,14 +1,3 @@
-# Controlled FS
-
-A type-safe filesystem abstraction for Node.js, with runtime validation and customizable serialization.
-
-## Example
-
-This is a simple example of how to use `controlled-fs` to store JSON data and binary files in a structured filesystem.
-
-[example.ts](example/example.ts)
-
-```ts
 import { randomUUID } from "node:crypto";
 import { mount, File, serializer } from "controlled-fs";
 import { z } from "zod";
@@ -133,4 +122,3 @@ function list_posts(userid: string) {
 function list_images() {
 	return fs.images.$list();
 }
-```
