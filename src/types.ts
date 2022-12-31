@@ -23,7 +23,7 @@ export type FileNode<T> = {
 	get $exists(): boolean;
 	get $path(): string;
 	get $remove(): () => void;
-	get $data(): T;
+	get $data(): T | undefined;
 	set $data(data: T | undefined);
 };
 
