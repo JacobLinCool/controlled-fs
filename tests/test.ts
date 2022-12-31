@@ -1,63 +1,204 @@
-import { control } from "../src";
+import fs from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { mount, File, serializer } from "../src";
+import { z } from "zod";
 
 const users = Array.from({ length: 10 }, (_, i) => ({
-	id: `user-${i}`,
+	id: randomUUID(),
 	name: `User ${i}`,
 	files: Array.from({ length: 3 }, (_, j) => ({
-		name: `file-${j}.txt`,
+		id: randomUUID(),
 		data: `This is file ${j} of user ${i}`,
 	})),
 }));
 
-const datadir = control("data");
-const filedir = control<string>(
-	datadir.$path + "/files",
-	(data: string) => data,
-	(data) => String(data),
-);
-const userdir = control<{ name: string; files: string[] }>(
-	datadir.$path + "/users",
-	JSON.stringify,
-	(buffer) => JSON.parse(String(buffer)),
-);
-
-test("data/files", () => {
-	for (const user of users) {
-		for (const file of user.files) {
-			expect(filedir[user.id][file.name].$exists).toBe(false);
-			filedir[user.id][file.name].$data = file.data;
-			expect(filedir[user.id][file.name].$exists).toBe(true);
-		}
+function reset(sub?: string) {
+	const dir = path.join("testdata", sub ?? "");
+	if (fs.existsSync(dir)) {
+		fs.rmSync(dir, { recursive: true });
 	}
+}
 
-	for (const user of users) {
-		for (const file of user.files) {
-			expect(filedir[user.id][file.name].$data).toEqual(file.data);
-		}
-	}
-});
+describe("single file", () => {
+	reset("single-file");
 
-test("data/users", () => {
-	for (const user of users) {
-		const dir = filedir[user.id];
-		if (dir.$exists && dir.$type === "dir") {
-			const file = userdir[`${user.id}.json`];
-			if (file.$writeable) {
-				file.$data = { name: user.name, files: dir.$list() };
-			}
-		}
-	}
+	describe("txt file", () => {
+		const file = mount("testdata/single-file/file.txt", File(z.string(), ...serializer.string));
 
-	for (const user of users) {
-		expect(userdir[`${user.id}.json`].$data).toEqual({
-			name: user.name,
-			files: user.files.map((f) => f.name),
+		test("file path is correct", () => {
+			expect(file.$path).toBe(path.resolve("testdata/single-file/file.txt"));
 		});
-	}
+
+		test("not exists before assignment", () => {
+			expect(file.$exists).toBe(false);
+		});
+
+		test("exists after assignment", () => {
+			file.$data = "Hello World";
+			expect(file.$exists).toBe(true);
+		});
+
+		test("data is correct", () => {
+			expect(file.$data).toBe("Hello World");
+		});
+
+		test("data is correct after removal", () => {
+			file.$data = undefined;
+			expect(file.$data).toBe(undefined);
+		});
+
+		test("not exists after removal", () => {
+			expect(file.$exists).toBe(false);
+		});
+	});
+
+	describe("binary file", () => {
+		const file = mount("testdata/single-file/file.bin", File(z.instanceof(Buffer)));
+
+		test("not exists before assignment", () => {
+			expect(file.$exists).toBe(false);
+		});
+
+		test("data is correct", () => {
+			file.$data = Buffer.from([0x00, 0x01, 0x02, 0x03]);
+			expect(file.$data).toEqual(Buffer.from([0x00, 0x01, 0x02, 0x03]));
+		});
+
+		test("data is correct after removal", () => {
+			file.$data = undefined;
+			expect(file.$data).toBe(undefined);
+		});
+	});
+
+	describe("json file", () => {
+		const file = mount(
+			"testdata/single-file/file.json",
+			File(
+				z.object({
+					string: z.string(),
+					number: z.number(),
+					boolean: z.boolean(),
+					array: z.array(z.string()),
+					object: z.object({
+						key: z.string(),
+					}),
+				}),
+				...serializer.json,
+			),
+		);
+
+		test("not exists before assignment", () => {
+			expect(file.$exists).toBe(false);
+		});
+
+		test("data is correct", () => {
+			file.$data = {
+				string: "Hello World",
+				number: 123,
+				boolean: true,
+				array: ["Hello", "World"],
+				object: {
+					key: "value",
+				},
+			};
+			expect(file.$data).toEqual({
+				string: "Hello World",
+				number: 123,
+				boolean: true,
+				array: ["Hello", "World"],
+				object: {
+					key: "value",
+				},
+			});
+		});
+
+		test("data is correct after removal", () => {
+			file.$data = undefined;
+			expect(file.$data).toBe(undefined);
+		});
+	});
 });
 
-afterAll(() => {
-	if (datadir.$exists) {
-		datadir.$remove();
-	}
+describe("directory", () => {
+	reset("directory");
+
+	const dir = mount(
+		"testdata/directory",
+		z.record(z.string().uuid(), File(z.instanceof(Buffer), ...serializer.buffer)),
+	);
+
+	const id = randomUUID();
+
+	test("not exists before assignment", () => {
+		expect(dir.$exists).toBe(false);
+	});
+
+	test("exists after assignment", () => {
+		dir[id].$data = Buffer.from([0x00, 0x01, 0x02, 0x03]);
+		expect(dir[id].$exists).toBe(true);
+		expect(dir.$exists).toBe(true);
+	});
+
+	test("data is correct", () => {
+		expect(dir[id].$data).toEqual(Buffer.from([0x00, 0x01, 0x02, 0x03]));
+	});
+
+	test("data is correct after removal", () => {
+		dir[id].$remove();
+		expect(dir[id].$data).toBe(undefined);
+	});
+
+	test("not exists after removal", () => {
+		dir.$remove();
+		expect(dir.$exists).toBe(false);
+	});
+});
+
+describe("has schema", () => {
+	reset("has-schema");
+	const data = mount(
+		"testdata/has-schema",
+		z.object({
+			users: z.record(
+				z.string().uuid(),
+				z.object({
+					"info.json": File(z.object({ name: z.string() }), ...serializer.json),
+					files: z.record(z.string(), File(z.string(), ...serializer.string)),
+				}),
+			),
+		}),
+	);
+
+	test("valid data", () => {
+		expect(data.$exists).toBe(false);
+		for (const user of users) {
+			expect(data.users[user.id].$exists).toBe(false);
+			data.users[user.id]["info.json"].$data = { name: user.name };
+			expect(data.users[user.id]["info.json"].$exists).toBe(true);
+			expect(data.users[user.id]["info.json"].$data).toEqual({ name: user.name });
+
+			for (const file of user.files) {
+				expect(data.users[user.id].files[file.id].$exists).toBe(false);
+				data.users[user.id].files[file.id].$data = file.data;
+				expect(data.users[user.id].files[file.id].$exists).toBe(true);
+				expect(data.users[user.id].files[file.id].$data).toBe(file.data);
+			}
+			expect(data.users[user.id].files.$list().sort()).toEqual(
+				user.files.map((file) => file.id).sort(),
+			);
+			expect(data.users[user.id].$exists).toBe(true);
+		}
+		expect(data.$exists).toBe(true);
+	});
+
+	test("invalid key error", () => {
+		// @ts-expect-error
+		expect(() => data.abcdef).toThrow();
+		expect(() => data.users.abcdef).toThrow();
+		expect(() => data.users.abcdef["info.json"]).toThrow();
+		expect(() => data.users[randomUUID()].files[""].$data).toThrow();
+		expect(() => data.users[randomUUID()].files[".."].$data).toThrow();
+		expect(() => data.users[randomUUID()].files["abc/def"].$data).toThrow();
+	});
 });
