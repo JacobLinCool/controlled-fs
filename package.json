@@ -1,6 +1,6 @@
 {
 	"name": "controlled-fs",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "A type-safe filesystem abstraction for Node.js, with runtime validation and customizable serialization.",
 	"keywords": [
 		"fs",
