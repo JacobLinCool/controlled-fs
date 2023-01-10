@@ -4,3 +4,8 @@ useTabs: true
 trailingComma: all
 semi: true
 singleQuote: false
+
+overrides:
+    - files: "*.md"
+      options:
+          useTabs: false
