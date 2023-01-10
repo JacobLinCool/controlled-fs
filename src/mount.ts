@@ -102,7 +102,7 @@ export function mount<T extends FileSystemSchema = UntypedFileSystemSchema>(
 					throw new ControlError(`No such key: ${key}`);
 				}
 			} else if (schema instanceof z.ZodRecord) {
-				schema.keySchema.parse(key);
+				key = String(schema.keySchema.parse(key));
 			}
 
 			if (key.length === 0 || key.includes(sep) || !resolve(path, key).startsWith(path)) {

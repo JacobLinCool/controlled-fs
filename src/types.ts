@@ -14,7 +14,10 @@ export type FileSystemSchema = DirSchema | FileSchema;
 
 export type IsFile<T extends FileSystemSchema> = T extends FileSchema ? true : false;
 export type IsDir<T extends FileSystemSchema> = IsFile<T> extends true ? false : true;
-export type SubSchema<T extends DirSchema, K extends keyof z.infer<T>> = T extends z.ZodRecord
+export type SubSchema<
+	T extends DirSchema,
+	K extends keyof z.infer<T>,
+> = T extends z.ZodRecord<z.KeySchema>
 	? T["valueSchema"]
 	: T extends z.ZodObject<infer S>
 	? S[K]
