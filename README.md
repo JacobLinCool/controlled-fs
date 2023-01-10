@@ -2,6 +2,120 @@
 
 A type-safe filesystem abstraction for Node.js, with runtime validation and customizable serialization.
 
+## Installation
+
+```sh
+pnpm i controlled-fs
+```
+
+> You can also use `npm`, `yarn` or other package managers to install `controlled-fs`, if you prefer.
+
+## Usage
+
+### Basics
+
+Before using `controlled-fs`, you need to define a structure schema for your filesystem.
+
+```ts
+import { File, serializer } from "controlled-fs";
+import { z } from "zod";
+
+const structure = z.record(
+	z.string(),
+	File(
+		z.object({
+			name: z.string(),
+			password: z.string(),
+		}),
+		...serializer.json,
+	),
+);
+```
+
+Then, you can mount the structure to a directory (exists or not).
+
+> you can mount to a file if your structure is a single `File(...)`
+
+```ts
+import { mount } from "controlled-fs";
+
+const fs = mount("./data", structure);
+```
+
+Now, you can access the type-safe filesystem using the structure schema.
+
+```ts
+// write data
+fs["user1"].$data = {
+    name: "User 1",
+    password: "1234",
+};
+
+// read data
+const user1 = fs["user1"].$data;
+
+// remove data
+fs["user1"].$data = undefined; // or fs["user1"].$remove();
+
+// list files
+const files = fs.$list();
+
+// remove directory
+fs.$remove();
+
+// check if exists
+fs["user1"].$exists(); // true or false
+
+// get the absolute path
+fs["user1"].$path; // /path/to/data/user1
+```
+
+
+### Transform
+
+`controlled-fs` leverages the power of zod's `transform` method to provide a type-safe way to transform path or data before it is written to the filesystem.
+
+[example/transform.ts](example/transform.ts)
+
+```ts
+import { createHash } from "node:crypto";
+import { mount, File, serializer } from "controlled-fs";
+import { z } from "zod";
+
+const structure = z.record(
+	z
+		.string()
+		.describe("User ID")
+		.transform((id) => createHash("md5").update(id).digest("hex")),
+	File(
+		z.object({
+			name: z.string().describe("Name"),
+			password: z
+				.string()
+				.describe("Password")
+				.transform((id) => createHash("sha256").update(id).digest("hex")),
+		}),
+		...serializer.json,
+	),
+);
+
+// mount to `./data`
+const fs = mount("./data", structure);
+
+const file = fs["jacoblincool"];
+file.$data = { name: "Jacob Lin", password: "jacob's password" };
+
+console.log(file.$path, file.$data);
+```
+
+```sh
+# output
+/workspace/data/640246d792c0bd83ac4089c2f946ebab {
+    name: 'Jacob Lin',
+    password: '94c8b775abd738f9fc928538def16264ca9ac19dad9454704f03806bdf3dc702'
+}
+```
+
 ## Example
 
 This is a simple example of how to use `controlled-fs` to store JSON data and binary files in a structured filesystem.
