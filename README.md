@@ -21,14 +21,14 @@ import { File, serializer } from "controlled-fs";
 import { z } from "zod";
 
 const structure = z.record(
-	z.string(),
-	File(
-		z.object({
-			name: z.string(),
-			password: z.string(),
-		}),
-		...serializer.json,
-	),
+    z.string(),
+    File(
+        z.object({
+            name: z.string(),
+            password: z.string(),
+        }),
+        ...serializer.json,
+    ),
 );
 ```
 
@@ -83,20 +83,20 @@ import { mount, File, serializer } from "controlled-fs";
 import { z } from "zod";
 
 const structure = z.record(
-	z
-		.string()
-		.describe("User ID")
-		.transform((id) => createHash("md5").update(id).digest("hex")),
-	File(
-		z.object({
-			name: z.string().describe("Name"),
-			password: z
-				.string()
-				.describe("Password")
-				.transform((id) => createHash("sha256").update(id).digest("hex")),
-		}),
-		...serializer.json,
-	),
+    z
+        .string()
+        .describe("User ID")
+        .transform((id) => createHash("md5").update(id).digest("hex")),
+    File(
+        z.object({
+            name: z.string().describe("Name"),
+            password: z
+                .string()
+                .describe("Password")
+                .transform((id) => createHash("sha256").update(id).digest("hex")),
+        }),
+        ...serializer.json,
+    ),
 );
 
 // mount to `./data`
