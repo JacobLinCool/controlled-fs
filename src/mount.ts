@@ -7,6 +7,7 @@ import type {
 	Node,
 	MountOptions,
 	CacheItem,
+	FSMethods,
 } from "./types";
 import { ControlError } from "./error";
 import { buffer } from "./serializer";
@@ -98,6 +99,10 @@ export function mount<T extends FileSystemSchema = UntypedFileSystemSchema>(
 				};
 			}
 
+			if (key === "$fs") {
+				return fs_methods(path);
+			}
+
 			if (schema instanceof z.ZodObject) {
 				if (!(key in schema.shape)) {
 					throw new ControlError(`No such key: ${key}`);
@@ -174,4 +179,18 @@ export function mount<T extends FileSystemSchema = UntypedFileSystemSchema>(
 	// @ts-expect-error
 	fs_cache.set(path, result);
 	return result;
+}
+
+export function fs_methods(path: string): FSMethods {
+	const result: any = {};
+
+	for (const key of Object.keys(fs)) {
+		const method = fs[key as keyof typeof fs];
+		if (typeof method === "function") {
+			// @ts-expect-error
+			result[key] = (...args: any[]) => method(path, ...args);
+		}
+	}
+
+	return result as FSMethods;
 }

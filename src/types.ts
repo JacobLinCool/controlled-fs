@@ -1,4 +1,4 @@
-import type { Stats } from "node:fs";
+import type fs from "node:fs";
 import type { z } from "zod";
 
 export type FileSchema<T = any> = z.ZodType<T> & {
@@ -27,6 +27,7 @@ export type FileNode<T> = {
 	get $exists(): boolean;
 	get $path(): string;
 	get $remove(): () => void;
+	get $fs(): FSMethods;
 	get $data(): T | undefined;
 	set $data(data: T | undefined);
 };
@@ -36,6 +37,7 @@ export type DirNode<T extends FileSystemSchema> = {
 	get $path(): string;
 	get $list(): () => string[];
 	get $remove(): () => void;
+	get $fs(): FSMethods;
 } & {
 	[K in keyof z.infer<T>]: IsDir<SubSchema<T, K>> extends true
 		? Node<SubSchema<T, K>>
@@ -50,7 +52,7 @@ export type UntypedFileSystemSchema = z.ZodRecord<z.ZodString, FileSchema<Buffer
 
 export type CacheItem = {
 	exists?: boolean;
-	stat?: Stats;
+	stat?: fs.Stats;
 	data?: Buffer;
 };
 
@@ -62,3 +64,11 @@ export interface MountOptions {
 	 */
 	cache?: boolean | Map<string, CacheItem>;
 }
+
+export type FSMethods = {
+	[K in keyof typeof fs as typeof fs[K] extends (path: fs.PathLike, ...args: any[]) => any
+		? K
+		: never]: typeof fs[K] extends (path: fs.PathLike, ...args: infer A) => infer R
+		? (...args: A) => R
+		: never;
+};
