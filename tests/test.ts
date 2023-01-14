@@ -62,6 +62,12 @@ function mutate(options?: MountOptions) {
 				test("not exists after removal", () => {
 					expect(file.$exists).toBe(false);
 				});
+
+				test("$fs", () => {
+					const ffs = file.$fs;
+					ffs.writeFileSync("data", "utf8");
+					expect(ffs.statSync()).toBeInstanceOf(fs.Stats);
+				});
 			});
 
 			describe("binary file", () => {
