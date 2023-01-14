@@ -33,15 +33,16 @@ export function mount<T extends FileSystemSchema = UntypedFileSystemSchema>(
 			: options.cache === true
 			? new Map<string, CacheItem>()
 			: options.cache;
-	const refresh_upstream = () => {
+
+	const parts = path.split(sep);
+	const ancestors = parts.map((_, i) => parts.slice(0, i).join(sep));
+	const refresh_ancestors = () => {
 		if (!content_cache) {
 			return;
 		}
-		const parts = path.split(sep);
 
-		for (let i = parts.length - 1; i > 0; i--) {
-			const p = parts.slice(0, i).join(sep);
-			content_cache.delete(p);
+		for (const ancestor of ancestors) {
+			content_cache.delete(ancestor);
 		}
 	};
 
@@ -93,7 +94,7 @@ export function mount<T extends FileSystemSchema = UntypedFileSystemSchema>(
 				return () => {
 					exists ? fs.rmSync(path, { recursive: true }) : undefined;
 					content_cache?.set(path, { exists: false, stat: undefined, data: undefined });
-					refresh_upstream();
+					refresh_ancestors();
 				};
 			}
 
@@ -150,18 +151,18 @@ export function mount<T extends FileSystemSchema = UntypedFileSystemSchema>(
 					});
 				} else {
 					value = schema ? schema.parse(value) : value;
+					const serialized = serializer(value);
 					const parent = resolve(path, "..");
 					if (!fs.existsSync(parent)) {
 						fs.mkdirSync(parent, { recursive: true });
 					}
-					const serialized = serializer(value);
 					fs.writeFileSync(path, serialized);
 					content_cache?.set(path, {
 						...content_cache?.get(path),
 						exists: true,
 						data: serialized,
 					});
-					refresh_upstream();
+					refresh_ancestors();
 					log(`Write: ${path} (length: ${serialized.length})`);
 				}
 			}
