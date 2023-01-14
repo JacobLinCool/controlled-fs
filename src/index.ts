@@ -3,3 +3,5 @@ export * from "./serializer";
 export * from "./file";
 export * from "./mount";
 export * from "./types";
+
+export { z } from "zod";
